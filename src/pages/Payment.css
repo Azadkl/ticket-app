@@ -1,0 +1,242 @@
+.payment-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .payment-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .payment-header h1 {
+    color: #1a1a2e;
+    margin-bottom: 10px;
+  }
+  
+  .payment-header p {
+    color: #666;
+  }
+  
+  .payment-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+  }
+  
+  .order-summary {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .order-summary h2 {
+    color: #1a1a2e;
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f5f5f5;
+    padding-bottom: 10px;
+  }
+  
+  .event-summary {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .event-thumbnail {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 5px;
+  }
+  
+  .event-summary-details h3 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: #1a1a2e;
+  }
+  
+  .event-summary-details p {
+    margin: 5px 0;
+    color: #666;
+  }
+  
+  .ticket-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+  }
+  
+  .summary-row.total {
+    font-weight: bold;
+    font-size: 1.2rem;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    margin-top: 5px;
+  }
+  
+  .summary-row.total span:last-child {
+    color: #e94560;
+  }
+  
+  .payment-form-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .payment-form-container h2 {
+    color: #1a1a2e;
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f5f5f5;
+    padding-bottom: 10px;
+  }
+  
+  .payment-methods {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .payment-method {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+    border: 2px solid #eee;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .payment-method:hover {
+    border-color: #ccc;
+  }
+  
+  .payment-method.active {
+    border-color: #e94560;
+    background-color: #fff5f7;
+  }
+  
+  .method-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+  
+  .payment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .form-group label {
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .form-group input {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+  }
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+  
+  .pay-button {
+    background-color: #e94560;
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+  }
+  
+  .pay-button:hover {
+    background-color: #d13652;
+  }
+  
+  .pay-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .error-message {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  
+  .bank-transfer-info {
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+  }
+  
+  .bank-details {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: white;
+    border: 1px solid #eee;
+    border-radius: 5px;
+  }
+  
+  .bank-details p {
+    margin: 5px 0;
+  }
+  
+  .note {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+  }
+  
+  .loading,
+  .error {
+    text-align: center;
+    padding: 50px;
+    font-size: 1.2rem;
+    color: #666;
+  }
+  
+  @media (max-width: 768px) {
+    .payment-content {
+      grid-template-columns: 1fr;
+    }
+  
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  
