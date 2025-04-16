@@ -2,91 +2,66 @@
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
+import { ticketService } from "../services/api"
 import "./Homepage.css"
+import eventDefaultImage from "../assets/images/eventimage.jpg" // Import resim dosyasını
 
 const Homepage = () => {
-  const [events, setEvents] = useState([])
+  const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("all")
+  const [error, setError] = useState("")
+  const [locations, setLocations] = useState([])
 
   useEffect(() => {
-    // Gerçek uygulamada burada API çağrısı yapılır
-    // Şimdilik mock veri kullanıyoruz
-    const fetchEvents = () => {
-      setLoading(true)
-
-      // Mock etkinlik verileri
-      const mockEvents = [
-        {
-          id: 1,
-          title: "Rock Konseri",
-          date: "2023-12-15",
-          time: "20:00",
-          location: "İstanbul Arena",
-          category: "music",
-          price: 250,
-          image: "/placeholder.svg?height=200&width=300",
-        },
-        {
-          id: 2,
-          title: "Tiyatro Gösterisi",
-          date: "2023-12-20",
-          time: "19:30",
-          location: "Ankara Devlet Tiyatrosu",
-          category: "theater",
-          price: 150,
-          image: "/placeholder.svg?height=200&width=300",
-        },
-        {
-          id: 3,
-          title: "Futbol Maçı",
-          date: "2023-12-18",
-          time: "21:00",
-          location: "İzmir Stadyumu",
-          category: "sports",
-          price: 200,
-          image: "/placeholder.svg?height=200&width=300",
-        },
-        {
-          id: 4,
-          title: "Stand-up Gösterisi",
-          date: "2023-12-25",
-          time: "21:30",
-          location: "Antalya Kültür Merkezi",
-          category: "comedy",
-          price: 180,
-          image: "/placeholder.svg?height=200&width=300",
-        },
-        {
-          id: 5,
-          title: "Klasik Müzik Konseri",
-          date: "2023-12-30",
-          time: "19:00",
-          location: "İstanbul Konser Salonu",
-          category: "music",
-          price: 300,
-          image: "/placeholder.svg?height=200&width=300",
-        },
-        {
-          id: 6,
-          title: "Basketbol Turnuvası",
-          date: "2024-01-05",
-          time: "18:00",
-          location: "Bursa Spor Salonu",
-          category: "sports",
-          price: 120,
-          image: "/placeholder.svg?height=200&width=300",
-        },
-      ]
-
-      setEvents(mockEvents)
-      setLoading(false)
-    }
-
-    fetchEvents()
+    fetchTickets()
   }, [])
 
-  const filteredEvents = filter === "all" ? events : events.filter((event) => event.category === filter)
+  const fetchTickets = async () => {
+    try {
+      setLoading(true)
+      setError("")
+
+      // Tüm biletleri getir
+      const data = await ticketService.getAllTickets()
+      setTickets(data)
+
+      // Lokasyonları çıkar
+      const uniqueLocations = [...new Set(data.map((ticket) => ticket.location))].filter(Boolean)
+      setLocations(uniqueLocations)
+    } catch (err) {
+      console.error("Biletler yüklenirken hata oluştu:", err)
+      setError("Biletler yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Filtreleme işlemi
+  const filteredTickets = filter === "all" ? tickets : tickets.filter((ticket) => ticket.location === filter)
+
+  // Biletleri etkinlik adına göre grupla
+  const groupedTickets = filteredTickets.reduce((acc, ticket) => {
+    if (!acc[ticket.name]) {
+      acc[ticket.name] = {
+        name: ticket.name,
+        organizer: ticket.organizer,
+        location: ticket.location,
+        eventDate: ticket.eventDate,
+        price: ticket.price,
+        tickets: [],
+      }
+    }
+    acc[ticket.name].tickets.push(ticket)
+    return acc
+  }, {})
+
+  const events = Object.values(groupedTickets)
+
+  // Resim hata yönetimi için
+  const handleImageError = (e) => {
+    e.target.src = eventDefaultImage // Hata durumunda default resmi kullan
+  }
 
   return (
     <div className="homepage-container">
@@ -99,39 +74,46 @@ const Homepage = () => {
         <button className={`filter-button ${filter === "all" ? "active" : ""}`} onClick={() => setFilter("all")}>
           Tümü
         </button>
-        <button className={`filter-button ${filter === "music" ? "active" : ""}`} onClick={() => setFilter("music")}>
-          Müzik
-        </button>
-        <button
-          className={`filter-button ${filter === "theater" ? "active" : ""}`}
-          onClick={() => setFilter("theater")}
-        >
-          Tiyatro
-        </button>
-        <button className={`filter-button ${filter === "sports" ? "active" : ""}`} onClick={() => setFilter("sports")}>
-          Spor
-        </button>
-        <button className={`filter-button ${filter === "comedy" ? "active" : ""}`} onClick={() => setFilter("comedy")}>
-          Komedi
-        </button>
+        {locations.map((location) => (
+          <button
+            key={location}
+            className={`filter-button ${filter === location ? "active" : ""}`}
+            onClick={() => setFilter(location)}
+          >
+            {location}
+          </button>
+        ))}
       </div>
+
+      {error && <div className="error-message">{error}</div>}
 
       {loading ? (
         <div className="loading">Etkinlikler yükleniyor...</div>
       ) : (
         <div className="events-grid">
-          {filteredEvents.length > 0 ? (
-            filteredEvents.map((event) => (
-              <div key={event.id} className="event-card">
-                <img src={event.image || "/placeholder.svg"} alt={event.title} className="event-image" />
+          {events.length > 0 ? (
+            events.map((event) => (
+              <div key={event.name} className="event-card">
+                <img
+                  src="assets/images/eventimage.jpg" // public klasöründeki resim
+                  alt={event.name}
+                  className="event-image"
+                  onError={(e) => {
+                    e.target.onerror = null // Sonsuz döngüyü önlemek için
+                    e.target.src = "/images/default.jpg" // Alternatif default resim
+                  }}
+                />
                 <div className="event-details">
-                  <h3>{event.title}</h3>
+                  <h3>{event.name}</h3>
                   <p className="event-date">
-                    {event.date} - {event.time}
+                    {new Date(event.eventDate).toLocaleDateString("tr-TR")} -{" "}
+                    {new Date(event.eventDate).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                   <p className="event-location">{event.location}</p>
+                  <p className="event-organizer">Organizatör: {event.organizer}</p>
                   <p className="event-price">{event.price} TL</p>
-                  <Link to={`/event/${event.id}`} className="view-details-button">
+                  <p className="event-availability">{event.tickets.length} adet bilet mevcut</p>
+                  <Link to={`/event/${event.tickets[0].ticketId}`} className="view-details-button">
                     Detayları Gör
                   </Link>
                 </div>
@@ -147,4 +129,3 @@ const Homepage = () => {
 }
 
 export default Homepage
-

@@ -1,17 +1,19 @@
 "use client"
 
 import { useState, useEffect, useContext } from "react"
-import { useParams, useNavigate, useLocation } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import { AuthContext } from "../context/AuthContext"
+import { orderService, paymentService, ticketService } from "../services/api"
 import "./Payment.css"
+import eventDefaultImage from "../assets/images/eventimage.jpg" // Import resim dosyasını
 
 const Payment = () => {
-  const { eventId } = useParams()
-  const location = useLocation()
+  const { orderId } = useParams()
   const navigate = useNavigate()
   const { currentUser } = useContext(AuthContext)
 
-  const [event, setEvent] = useState(null)
+  const [order, setOrder] = useState(null)
+  const [ticket, setTicket] = useState(null)
   const [loading, setLoading] = useState(true)
   const [paymentMethod, setPaymentMethod] = useState("credit-card")
   const [cardNumber, setCardNumber] = useState("")
@@ -21,36 +23,33 @@ const Payment = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState("")
 
-  // URL'den tarih ve bilet sayısı parametrelerini al
-  const queryParams = new URLSearchParams(location.search)
-  const selectedDate = queryParams.get("date") || ""
-  const ticketCount = Number.parseInt(queryParams.get("count") || "1")
-
   useEffect(() => {
-    // Gerçek uygulamada burada API çağrısı yapılır
-    // Şimdilik mock veri kullanıyoruz
-    const fetchEvent = () => {
+    fetchOrderDetails()
+  }, [orderId])
+
+  const fetchOrderDetails = async () => {
+    try {
       setLoading(true)
+      setError("")
 
-      // Mock etkinlik verisi
-      const mockEvent = {
-        id: Number.parseInt(eventId),
-        title: "Rock Konseri",
-        date: selectedDate || "2023-12-15",
-        time: "20:00",
-        location: "İstanbul Arena",
-        price: 250,
-        image: "/placeholder.svg?height=200&width=300",
+      // Sipariş bilgilerini getir
+      const orderData = await orderService.getOrderById(orderId)
+      setOrder(orderData)
+
+      // Bilet bilgilerini getir
+      if (orderData && orderData.ticketId) {
+        const ticketData = await ticketService.getTicketById(orderData.ticketId)
+        setTicket(ticketData)
       }
-
-      setEvent(mockEvent)
+    } catch (err) {
+      console.error("Sipariş bilgileri yüklenirken hata oluştu:", err)
+      setError("Sipariş bilgileri yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
+    } finally {
       setLoading(false)
     }
+  }
 
-    fetchEvent()
-  }, [eventId, selectedDate])
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     // Form doğrulama
@@ -69,27 +68,49 @@ const Payment = () => {
       return
     }
 
-    // Ödeme işlemi simülasyonu
-    setError("")
-    setIsProcessing(true)
+    try {
+      setError("")
+      setIsProcessing(true)
 
-    setTimeout(() => {
-      setIsProcessing(false)
+      // Ödeme işlemi
+      const paymentData = {
+        orderId: orderId,
+        userId: currentUser.id,
+        isPaid: true,
+        createdAt: new Date().toISOString(),
+      }
+
+      await paymentService.createPayment(paymentData)
+
+      // Sipariş durumunu güncelle
+      await orderService.updateOrderStatus(orderId, "Completed")
+
       // Başarılı ödeme sonrası ana sayfaya yönlendirme
       alert("Ödeme başarıyla tamamlandı! Biletleriniz e-posta adresinize gönderilecektir.")
       navigate("/")
-    }, 2000)
+    } catch (err) {
+      setError(err.message || "Ödeme işlemi sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
+      console.error(err)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   if (loading) {
     return <div className="loading">Ödeme bilgileri yükleniyor...</div>
   }
 
-  if (!event) {
-    return <div className="error">Etkinlik bulunamadı.</div>
+  if (error && !ticket) {
+    return <div className="error">{error}</div>
   }
 
-  const totalAmount = event.price * ticketCount
+  if (!ticket || !order) {
+    return <div className="error">Sipariş bilgileri bulunamadı.</div>
+  }
+
+  const handleImageError = (e) => {
+    e.target.src = eventDefaultImage // Hata durumunda default resmi kullan
+  }
 
   return (
     <div className="payment-container">
@@ -102,28 +123,31 @@ const Payment = () => {
         <div className="order-summary">
           <h2>Sipariş Özeti</h2>
           <div className="event-summary">
-            <img src={event.image || "/placeholder.svg"} alt={event.title} className="event-thumbnail" />
+            <img
+              src={eventDefaultImage || "/placeholder.svg"} // Import edilen resmi kullan
+              alt={ticket.name}
+              className="event-thumbnail"
+              onError={handleImageError} // Resim yüklenemezse hata yönetimi
+            />
             <div className="event-summary-details">
-              <h3>{event.title}</h3>
+              <h3>{ticket.name}</h3>
               <p>
-                {event.date} - {event.time}
+                {new Date(ticket.eventDate).toLocaleDateString("tr-TR")} -{" "}
+                {new Date(ticket.eventDate).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
               </p>
-              <p>{event.location}</p>
+              <p>{ticket.location}</p>
+              <p>Koltuk: {ticket.seatNumber || "Numarasız"}</p>
             </div>
           </div>
 
           <div className="ticket-summary">
             <div className="summary-row">
               <span>Bilet Fiyatı:</span>
-              <span>{event.price} TL</span>
-            </div>
-            <div className="summary-row">
-              <span>Bilet Adedi:</span>
-              <span>{ticketCount}</span>
+              <span>{ticket.price} TL</span>
             </div>
             <div className="summary-row total">
               <span>Toplam Tutar:</span>
-              <span>{totalAmount} TL</span>
+              <span>{ticket.price} TL</span>
             </div>
           </div>
         </div>
@@ -203,7 +227,7 @@ const Payment = () => {
               </div>
 
               <button type="submit" className="pay-button" disabled={isProcessing}>
-                {isProcessing ? "İşleniyor..." : `${totalAmount} TL Öde`}
+                {isProcessing ? "İşleniyor..." : `${ticket.price} TL Öde`}
               </button>
             </form>
           )}
@@ -222,7 +246,7 @@ const Payment = () => {
                   <strong>IBAN:</strong> TR12 3456 7890 1234 5678 9012 34
                 </p>
                 <p>
-                  <strong>Açıklama:</strong> {currentUser.name} - {event.title} - {event.date}
+                  <strong>Açıklama:</strong> {currentUser.name} - {ticket.name} - Sipariş No: {orderId}
                 </p>
               </div>
               <p className="note">
@@ -238,4 +262,3 @@ const Payment = () => {
 }
 
 export default Payment
-

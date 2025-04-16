@@ -11,7 +11,7 @@ const Login = () => {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const { login } = useContext(AuthContext)
+  const { login, error: contextError } = useContext(AuthContext)
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -26,30 +26,22 @@ const Login = () => {
       setError("")
       setLoading(true)
 
-      // Gerçek uygulamada burada API çağrısı yapılır
-      // Şimdilik mock veri kullanıyoruz
-      const success = login({
-        id: 1,
-        name: "Test Kullanıcı",
-        email: email,
-      })
-
-      if (success) {
-        navigate("/")
-      }
+      // User servisi üzerinden login işlemi
+      await login(email, password)
+      navigate("/")
     } catch (err) {
-      setError("Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.")
+      setError(err.message || "Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.")
       console.error(err)
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
     <div className="auth-container">
       <div className="auth-form-container">
         <h2>Giriş Yap</h2>
-        {error && <div className="error-message">{error}</div>}
+        {(error || contextError) && <div className="error-message">{error || contextError}</div>}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="email">E-posta</label>
@@ -78,4 +70,3 @@ const Login = () => {
 }
 
 export default Login
-

@@ -3,53 +3,70 @@
 import { useState, useEffect, useContext } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { AuthContext } from "../context/AuthContext"
+import { ticketService, orderService } from "../services/api"
 import "./Event.css"
+import eventDefaultImage from "../assets/images/eventimage.jpg" // Import resim dosyasını
 
 const Event = () => {
   const { id } = useParams()
-  const [event, setEvent] = useState(null)
+  const [ticket, setTicket] = useState(null)
+  const [relatedTickets, setRelatedTickets] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState("")
+  const [error, setError] = useState("")
   const [ticketCount, setTicketCount] = useState(1)
   const { currentUser } = useContext(AuthContext)
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Gerçek uygulamada burada API çağrısı yapılır
-    // Şimdilik mock veri kullanıyoruz
-    const fetchEvent = () => {
-      setLoading(true)
-
-      // Mock etkinlik verisi
-      const mockEvent = {
-        id: Number.parseInt(id),
-        title: "Rock Konseri",
-        description:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl.",
-        dates: ["2023-12-15", "2023-12-16", "2023-12-17"],
-        time: "20:00",
-        location: "İstanbul Arena",
-        address: "Kadıköy, İstanbul",
-        category: "music",
-        price: 250,
-        image: "/placeholder.svg?height=400&width=800",
-      }
-
-      setEvent(mockEvent)
-      setSelectedDate(mockEvent.dates[0])
-      setLoading(false)
-    }
-
-    fetchEvent()
+    fetchTicket()
   }, [id])
 
-  const handleBuyTicket = () => {
+  const fetchTicket = async () => {
+    try {
+      setLoading(true)
+      setError("")
+
+      // Bilet bilgilerini getir
+      const data = await ticketService.getTicketById(id)
+      setTicket(data)
+
+      // İlgili biletleri getir (aynı isimli etkinliğe ait diğer biletler)
+      if (data) {
+        const allTickets = await ticketService.getAllTickets()
+        const related = allTickets.filter((t) => t.name === data.name && t.ticketId !== data.ticketId && !t.isSold)
+        setRelatedTickets(related)
+      }
+    } catch (err) {
+      console.error("Bilet bilgileri yüklenirken hata oluştu:", err)
+      setError("Bilet bilgileri yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBuyTicket = async () => {
     if (!currentUser) {
       navigate("/login")
       return
     }
 
-    navigate(`/payment/${id}?date=${selectedDate}&count=${ticketCount}`)
+    try {
+      // Sipariş oluştur
+      const orderData = {
+        userId: currentUser.id,
+        ticketId: Number(id),
+        status: "Pending",
+        orderDate: new Date().toISOString(),
+      }
+
+      const order = await orderService.createOrder(orderData)
+
+      // Ödeme sayfasına yönlendir
+      navigate(`/payment/${order.orderId}`)
+    } catch (err) {
+      console.error("Sipariş oluşturulurken hata oluştu:", err)
+      setError("Sipariş oluşturulurken bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
+    }
   }
 
   const handleTicketCountChange = (e) => {
@@ -59,62 +76,93 @@ const Event = () => {
     }
   }
 
+  // Resim hata yönetimi için
+  const handleImageError = (e) => {
+    e.target.src = eventDefaultImage // Hata durumunda default resmi kullan
+  }
+
   if (loading) {
     return <div className="loading">Etkinlik bilgileri yükleniyor...</div>
   }
 
-  if (!event) {
-    return <div className="error">Etkinlik bulunamadı.</div>
+  if (error) {
+    return <div className="error">{error}</div>
+  }
+
+  if (!ticket) {
+    return <div className="error">Bilet bulunamadı.</div>
   }
 
   return (
     <div className="event-detail-container">
       <div className="event-header">
-        <img src={event.image || "/placeholder.svg"} alt={event.title} className="event-banner" />
+        <img
+          src={eventDefaultImage || "/placeholder.svg"} // Import edilen resmi kullan
+          alt={ticket.name}
+          className="event-banner"
+          onError={handleImageError} // Resim yüklenemezse hata yönetimi
+        />
         <div className="event-header-overlay">
-          <h1>{event.title}</h1>
-          <p className="event-category">{event.category}</p>
+          <h1>{ticket.name}</h1>
+          <p className="event-category">{ticket.organizer}</p>
         </div>
       </div>
 
       <div className="event-content">
         <div className="event-info">
           <h2>Etkinlik Bilgileri</h2>
-          <p className="event-description">{event.description}</p>
+          <p className="event-description">
+            {ticket.name} etkinliği {ticket.location} konumunda {new Date(ticket.eventDate).toLocaleDateString("tr-TR")}{" "}
+            tarihinde gerçekleşecektir.
+          </p>
 
           <div className="event-details-grid">
             <div className="detail-item">
               <h3>Tarih ve Saat</h3>
               <p>
-                {selectedDate} - {event.time}
+                {new Date(ticket.eventDate).toLocaleDateString("tr-TR")} -{" "}
+                {new Date(ticket.eventDate).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
             <div className="detail-item">
               <h3>Konum</h3>
-              <p>{event.location}</p>
-              <p>{event.address}</p>
+              <p>{ticket.location}</p>
+            </div>
+            <div className="detail-item">
+              <h3>Organizatör</h3>
+              <p>{ticket.organizer}</p>
+            </div>
+            <div className="detail-item">
+              <h3>Koltuk Numarası</h3>
+              <p>{ticket.seatNumber || "Numarasız"}</p>
             </div>
             <div className="detail-item">
               <h3>Bilet Fiyatı</h3>
-              <p className="event-price">{event.price} TL</p>
+              <p className="event-price">{ticket.price} TL</p>
             </div>
           </div>
+
+          {relatedTickets.length > 0 && (
+            <div className="related-tickets">
+              <h3>Diğer Biletler</h3>
+              <div className="related-tickets-grid">
+                {relatedTickets.map((relTicket) => (
+                  <div key={relTicket.ticketId} className="related-ticket-card">
+                    <p className="seat-number">Koltuk: {relTicket.seatNumber || "Numarasız"}</p>
+                    <p className="ticket-price">{relTicket.price} TL</p>
+                    <button onClick={() => navigate(`/event/${relTicket.ticketId}`)} className="select-ticket-button">
+                      Bu Bileti Seç
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="ticket-purchase-section">
           <h2>Bilet Al</h2>
           <div className="ticket-options">
-            <div className="option-group">
-              <label htmlFor="date">Tarih Seçin</label>
-              <select id="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}>
-                {event.dates.map((date) => (
-                  <option key={date} value={date}>
-                    {date}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div className="option-group">
               <label htmlFor="count">Bilet Adedi</label>
               <div className="ticket-count-control">
@@ -138,7 +186,7 @@ const Event = () => {
 
           <div className="total-section">
             <div className="total-label">Toplam Tutar:</div>
-            <div className="total-price">{event.price * ticketCount} TL</div>
+            <div className="total-price">{ticket.price * ticketCount} TL</div>
           </div>
 
           <button onClick={handleBuyTicket} className="buy-ticket-button">
@@ -151,4 +199,3 @@ const Event = () => {
 }
 
 export default Event
-

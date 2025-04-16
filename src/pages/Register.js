@@ -8,12 +8,13 @@ import "./Auth.css"
 const Register = () => {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const { register } = useContext(AuthContext)
+  const { register, error: contextError } = useContext(AuthContext)
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -33,30 +34,28 @@ const Register = () => {
       setError("")
       setLoading(true)
 
-      // Gerçek uygulamada burada API çağrısı yapılır
-      // Şimdilik mock veri kullanıyoruz
-      const success = register({
-        id: 1,
-        name: name,
-        email: email,
+      // User servisi üzerinden register işlemi
+      await register({
+        name,
+        email,
+        phone,
+        password,
       })
 
-      if (success) {
-        navigate("/")
-      }
+      navigate("/")
     } catch (err) {
-      setError("Kayıt oluşturulamadı. Lütfen tekrar deneyin.")
+      setError(err.message || "Kayıt oluşturulamadı. Lütfen tekrar deneyin.")
       console.error(err)
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
     <div className="auth-container">
       <div className="auth-form-container">
         <h2>Kayıt Ol</h2>
-        {error && <div className="error-message">{error}</div>}
+        {(error || contextError) && <div className="error-message">{error || contextError}</div>}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="name">Ad Soyad</label>
@@ -65,6 +64,10 @@ const Register = () => {
           <div className="form-group">
             <label htmlFor="email">E-posta</label>
             <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="phone">Telefon (İsteğe Bağlı)</label>
+            <input type="tel" id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
           <div className="form-group">
             <label htmlFor="password">Şifre</label>
@@ -99,4 +102,3 @@ const Register = () => {
 }
 
 export default Register
-
