@@ -29,6 +29,16 @@ const Navbar = () => {
           {currentUser ? (
             <>
               <li className="nav-item">
+                <Link to="/add-ticket" className="nav-links">
+                  <i className="nav-icon">+</i> Bilet Ekle
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link to="/my-tickets" className="nav-links">
+                  Biletlerim
+                </Link>
+              </li>
+              <li className="nav-item">
                 <span className="nav-links user-name">Merhaba, {currentUser.name}</span>
               </li>
               <li className="nav-item">
@@ -58,4 +68,3 @@ const Navbar = () => {
 }
 
 export default Navbar
-

@@ -5,7 +5,8 @@ import { useParams, useNavigate } from "react-router-dom"
 import { AuthContext } from "../context/AuthContext"
 import { ticketService, orderService } from "../services/api"
 import "./Event.css"
-import eventDefaultImage from "../assets/images/eventimage.jpg" // Import resim dosyasını
+import eventDefaultImage from "../assets/images/eventimage.jpg"
+import eventImage from "../assets/images/eventimage.jpg"
 
 const Event = () => {
   const { id } = useParams()
@@ -14,6 +15,8 @@ const Event = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [ticketCount, setTicketCount] = useState(1)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const { currentUser } = useContext(AuthContext)
   const navigate = useNavigate()
 
@@ -76,10 +79,43 @@ const Event = () => {
     }
   }
 
+  // Bilet silme işlemi
+  const handleDeleteTicket = async () => {
+    try {
+      setDeleting(true)
+      await ticketService.deleteTicket(id)
+      setShowDeleteModal(false)
+      alert("Bilet başarıyla silindi!")
+      navigate("/")
+    } catch (err) {
+      console.error("Bilet silinirken hata oluştu:", err)
+      setError(err.message || "Bilet silinirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
+      setDeleting(false)
+    }
+  }
+
+  // Bilet düzenleme sayfasına yönlendirme
+  const handleEditTicket = () => {
+    navigate(`/edit-ticket/${id}`)
+  }
+
   // Resim hata yönetimi için
   const handleImageError = (e) => {
-    e.target.src = eventDefaultImage // Hata durumunda default resmi kullan
+    e.target.src = eventDefaultImage
   }
+
+  // Kullanıcının bilet sahibi olup olmadığını kontrol et
+  // Burada console.log ekleyerek debug edelim
+  const isTicketOwner = currentUser && ticket && currentUser.id === ticket.userId
+  
+  // Debug için console.log ekleyelim
+  useEffect(() => {
+    if (currentUser && ticket) {
+      console.log("Current User ID:", currentUser.id)
+      console.log("Ticket User ID:", ticket.userId)
+      console.log("Is Owner:", currentUser.id === ticket.userId)
+    }
+  }, [currentUser, ticket])
 
   if (loading) {
     return <div className="loading">Etkinlik bilgileri yükleniyor...</div>
@@ -95,13 +131,26 @@ const Event = () => {
 
   return (
     <div className="event-detail-container">
+      {/* Silme onay modalı */}
+      {showDeleteModal && (
+        <div className="delete-modal-overlay">
+          <div className="delete-modal">
+            <h3>Bileti Sil</h3>
+            <p>Bu bileti silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
+            <div className="modal-buttons">
+              <button className="cancel-button" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
+                İptal
+              </button>
+              <button className="delete-button" onClick={handleDeleteTicket} disabled={deleting}>
+                {deleting ? "Siliniyor..." : "Evet, Sil"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="event-header">
-        <img
-          src={eventDefaultImage || "/placeholder.svg"} // Import edilen resmi kullan
-          alt={ticket.name}
-          className="event-banner"
-          onError={handleImageError} // Resim yüklenemezse hata yönetimi
-        />
+        <img src={eventImage || "/placeholder.svg"} alt={ticket.name} className="event-banner" />
         <div className="event-header-overlay">
           <h1>{ticket.name}</h1>
           <p className="event-category">{ticket.organizer}</p>
@@ -110,10 +159,22 @@ const Event = () => {
 
       <div className="event-content">
         <div className="event-info">
+          {/* Bilet sahibi için düzenleme ve silme butonları */}
+          {isTicketOwner && (
+            <div className="owner-actions">
+              <button onClick={handleEditTicket} className="edit-button">
+                Düzenle
+              </button>
+              <button onClick={() => setShowDeleteModal(true)} className="delete-button">
+                Sil
+              </button>
+            </div>
+          )}
+
           <h2>Etkinlik Bilgileri</h2>
           <p className="event-description">
-            {ticket.name} etkinliği {ticket.location} konumunda {new Date(ticket.eventDate).toLocaleDateString("tr-TR")}{" "}
-            tarihinde gerçekleşecektir.
+            {ticket.description ||
+              `${ticket.name} etkinliği ${ticket.location} konumunda ${new Date(ticket.eventDate).toLocaleDateString("tr-TR")} tarihinde gerçekleşecektir.`}
           </p>
 
           <div className="event-details-grid">

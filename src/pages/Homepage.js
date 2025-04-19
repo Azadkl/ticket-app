@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import { Link } from "react-router-dom"
 import { ticketService } from "../services/api"
+import { AuthContext } from "../context/AuthContext"
 import "./Homepage.css"
-import eventDefaultImage from "../assets/images/eventimage.jpg" // Import resim dosyasını
+import eventImage from "../assets/images/eventimage.jpg"
 
 const Homepage = () => {
   const [tickets, setTickets] = useState([])
@@ -12,6 +13,7 @@ const Homepage = () => {
   const [filter, setFilter] = useState("all")
   const [error, setError] = useState("")
   const [locations, setLocations] = useState([])
+  const { currentUser } = useContext(AuthContext)
 
   useEffect(() => {
     fetchTickets()
@@ -58,16 +60,23 @@ const Homepage = () => {
 
   const events = Object.values(groupedTickets)
 
-  // Resim hata yönetimi için
-  const handleImageError = (e) => {
-    e.target.src = eventDefaultImage // Hata durumunda default resmi kullan
-  }
-
   return (
     <div className="homepage-container">
       <div className="hero-section">
         <h1>BiletAl ile Etkinlikleri Keşfedin</h1>
         <p>Konserler, tiyatrolar, spor etkinlikleri ve daha fazlası...</p>
+
+        {/* Bilet Ekle butonu - sadece giriş yapmış kullanıcılar için */}
+        {currentUser && (
+          <div className="hero-buttons">
+            <Link to="/add-ticket" className="add-ticket-hero-button">
+              <i className="add-icon">+</i> Yeni Bilet Ekle
+            </Link>
+            <Link to="/my-tickets" className="my-tickets-hero-button">
+              Biletlerim
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="filter-section">
@@ -94,15 +103,7 @@ const Homepage = () => {
           {events.length > 0 ? (
             events.map((event) => (
               <div key={event.name} className="event-card">
-                <img
-                  src="assets/images/eventimage.jpg" // public klasöründeki resim
-                  alt={event.name}
-                  className="event-image"
-                  onError={(e) => {
-                    e.target.onerror = null // Sonsuz döngüyü önlemek için
-                    e.target.src = "/images/default.jpg" // Alternatif default resim
-                  }}
-                />
+                <img src={eventImage || "/placeholder.svg"} alt={event.name} className="event-image" />
                 <div className="event-details">
                   <h3>{event.name}</h3>
                   <p className="event-date">

@@ -26,12 +26,14 @@ export const AuthProvider = ({ children }) => {
       setToken(token)
       // User servisi üzerinden mevcut kullanıcı bilgilerini al
       const userData = await authService.getCurrentUser()
+      console.log("Kullanıcı bilgileri alındı:", userData) // Debug için
       setCurrentUser(userData)
       setError(null)
     } catch (error) {
       console.error("Kullanıcı bilgileri alınamadı:", error)
       localStorage.removeItem("token")
       setError("Oturum süresi dolmuş. Lütfen tekrar giriş yapın.")
+      setCurrentUser(null) // Kullanıcı bilgilerini temizle
     } finally {
       setLoading(false)
     }
@@ -46,6 +48,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", token)
       setToken(token)
       setCurrentUser(user)
+      console.log("Giriş yapıldı, kullanıcı:", user) // Debug için
       setError(null)
 
       return true
@@ -64,6 +67,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", token)
       setToken(token)
       setCurrentUser(user)
+      console.log("Kayıt olundu, kullanıcı:", user) // Debug için
       setError(null)
 
       return true
@@ -78,6 +82,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null)
     setCurrentUser(null)
     setError(null)
+    console.log("Çıkış yapıldı") // Debug için
   }
 
   const updateUserProfile = async (userData) => {

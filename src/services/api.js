@@ -2,9 +2,9 @@ import axios from "axios"
 
 // Mikroservis API URL'leri
 const API_URLS = {
-  user: "http://localhost:5088/api",
-  ticket: "http://localhost:5255/api",
-  order: "http://localhost:5256/api",
+  user: "http://localhost:5003/api",
+  ticket: "http://localhost:5001/api",
+  order: "http://localhost:5002/api",
   payment: "http://localhost:5005/api",
 }
 
@@ -35,6 +35,7 @@ const createApiInstance = (baseURL) => {
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
+      console.error("API Hatası:", error.response?.data || error.message) // Debug için
       const message = error.response?.data?.message || "Bir hata oluştu"
       const statusCode = error.response?.status || 500
       return Promise.reject({ message, statusCode })
@@ -100,46 +101,52 @@ export const userService = {
 
 // Bilet servisleri - Endpoint'leri düzeltildi
 export const ticketService = {
-    getAllTickets: async () => {
-      try {
-        const response = await ticketApi.get("/Tickets")
-        return response.data
-      } catch (error) {
-        throw error
-      }
-    },
-    getTicketById: async (id) => {
-      try {
-        const response = await ticketApi.get(`/Tickets/${id}`)
-        return response.data
-      } catch (error) {
-        throw error
-      }
-    },
-    createTicket: async (ticketData) => {
-      try {
-        const response = await ticketApi.post("/Tickets", ticketData)
-        return response.data
-      } catch (error) {
-        throw error
-      }
-    },
-    updateTicket: async (id, ticketData) => {
-      try {
-        const response = await ticketApi.put(`/Tickets/${id}`, ticketData)
-        return response.data
-      } catch (error) {
-        throw error
-      }
-    },
-    deleteTicket: async (id) => {
-      try {
-        const response = await ticketApi.delete(`/Tickets/${id}`)
-        return response.data
-      } catch (error) {
-        throw error
-      }
-    },
+  getAllTickets: async () => {
+    try {
+      const response = await ticketApi.get("/Tickets")
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+  getTicketById: async (id) => {
+    try {
+      const response = await ticketApi.get(`/Tickets/${id}`)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+  createTicket: async (ticketData) => {
+    try {
+      console.log("API'ye gönderilen bilet verileri:", ticketData) // Debug için
+      const response = await ticketApi.post("/Tickets", ticketData)
+      return response.data
+    } catch (error) {
+      console.error("Bilet oluşturma hatası:", error) // Debug için
+      throw error
+    }
+  },
+  updateTicket: async (id, ticketData) => {
+    try {
+      console.log("API'ye gönderilen güncelleme verileri:", ticketData) // Debug için
+      const response = await ticketApi.put(`/Tickets/${id}`, ticketData)
+      return response.data
+    } catch (error) {
+      console.error("Bilet güncelleme hatası:", error) // Debug için
+      throw error
+    }
+  },
+  deleteTicket: async (id) => {
+    try {
+      console.log("Silinen bilet ID:", id) // Debug için
+      const response = await ticketApi.delete(`/Tickets/${id}`)
+      return response.data
+    } catch (error) {
+      console.error("Bilet silme hatası:", error) // Debug için
+      throw error
+    }
+  },
 }
 
 // Sipariş servisleri
